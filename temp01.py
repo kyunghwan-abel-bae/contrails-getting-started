@@ -32,6 +32,21 @@ if __name__ == '__main__':
     print("main")
     # data load as Subset
     #
+    dataset_train = ContrailsAshDataset("train")
+    dataset_validation = ContrailsAshDataset("validation")
+
+    dataset_train = Subset(dataset_train, range(3))
+    dataset_validation = Subset(dataset_validation, range(3))
+
+    # list_idx = dataset_train
+    # print(list_idx)
+    # quit()
+
+    # dataloader_train = DataLoader(dataset_train)
+    loader_train = DataLoader(dataset_train, batch_size=20, shuffle=False, num_workers=2)
+    loader_validation = DataLoader(dataset_validation, batch_size=20, shuffle=False, num_workers=2)
+
+    quit()
 
     train = True
     if train is True:
