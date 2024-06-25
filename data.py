@@ -3,6 +3,7 @@ import pandas as pd
 
 from util import *
 
+
 class ContrailsAshDataset(torch.utils.data.Dataset):
     def __init__(self, parrent_folder: str):
         self.df_idx: pd.DataFrame = pd.DataFrame({'idx': os.listdir(f'data/{parrent_folder}')})
