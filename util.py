@@ -1,6 +1,9 @@
 import os
+import torch
 
+import torch.nn as nn
 import numpy as np
+
 import matplotlib.pyplot as plt
 
 
@@ -66,3 +69,59 @@ def show_ash_frame(idx: str, parrent_folder: str, frame: int):
 def show_mask_image(idx: str, parrent_folder: str):
     plt.imshow(get_mask_image(idx, parrent_folder))
     plt.show()
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+class Dice(nn.Module):
+    def __init__(self, use_sigmoid=True):
+        super(Dice, self).__init__()
+        self.sigmoid = nn.Sigmoid()
+        self.use_sigmoid = use_sigmoid
+
+    def forward(self, inputs, targets, smooth=1):
+        if self.use_sigmoid:
+            inputs = self.sigmoid(inputs)
+
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+
+        intersection = (inputs * targets).sum()
+        dice = (2.0 * intersection + smooth) / (inputs.sum() + targets.sum() + smooth)
+
+        return dice
+
+class DiceThresholdTester:
+
+    def __init__(self, model: nn.Module, data_loader: torch.utils.data.DataLoader):
+        self.model = model
+        self.data_loader = data_loader
+        self.cumulative_mask_pred = []
+        self.cumulative_mask_true = []
+
+    def precalculate_prediction(self) -> None:
+        sigmoid = nn.Sigmoid()
+
+        for images, mask_true in self.data_loader:
+            if torch.cuda.is_available():
+                images = images.cuda()
+
+            mask_pred = sigmoid(self.model.forward(images))
+
+            self.cumulative_mask_pred.append(mask_pred.cpu().detach().numpy())
+            self.cumulative_mask_true.append(mask_true.cpu().detach().numpy())
+
+        self.cumulative_mask_pred = np.concatenate(self.cumulative_mask_pred, axis=0)
+        self.cumulative_mask_true = np.concatenate(self.cumulative_mask_true, axis=0)
+
+        self.cumulative_mask_pred = torch.flatten(torch.from_numpy(self.cumulative_mask_pred))
+        self.cumulative_mask_true = torch.flatten(torch.from_numpy(self.cumulative_mask_true))
+
+    def test_threshold(self, threshold: float) -> float:
+        _dice = Dice(use_sigmoid=False)
+        after_threshold = np.zeros(self.cumulative_mask_pred.shape)
+        after_threshold[self.cumulative_mask_pred[:] > threshold] = 1
+        after_threshold[self.cumulative_mask_pred[:] < threshold] = 0
+        after_threshold = torch.flatten(torch.from_numpy(after_threshold))
+        return _dice(self.cumulative_mask_true, after_threshold).item()
