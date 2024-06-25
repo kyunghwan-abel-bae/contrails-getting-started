@@ -8,10 +8,6 @@ class ContrailsAshDataset(torch.utils.data.Dataset):
         self.df_idx: pd.DataFrame = pd.DataFrame({'idx': os.listdir(f'data/{parrent_folder}')})
         self.parrent_folder: str = parrent_folder
 
-        # # edit by KH
-        # self.df_idx = self.df_idx.head(3000)
-
-
     def __len__(self):
         return len(self.df_idx)
 

@@ -11,6 +11,7 @@ _T11_BOUNDS = (243, 303)
 _CLOUD_TOP_TDIFF_BOUNDS = (-4, 5)
 _TDIFF_BOUNDS = (-4, 2)
 
+
 def get_band_images(idx: str, parrent_folder: str, band: str) -> np.array:
     return np.load(os.path.join("data", parrent_folder, idx, f'band_{band}.npy'))
 
@@ -35,6 +36,7 @@ def get_ash_color_images(idx: str, parrent_folder: str, get_mask_frame_only=Fals
     b = normalize_range(band14, _T11_BOUNDS)
     false_color = np.clip(np.stack([r, g, b], axis=2), 0, 1)
     return false_color
+
 
 def get_mask_image(idx: str, parrent_folder: str) -> np.array:
     return np.load(os.path.join("data", parrent_folder, idx, 'human_pixel_masks.npy'))
@@ -70,6 +72,7 @@ def show_mask_image(idx: str, parrent_folder: str):
     plt.imshow(get_mask_image(idx, parrent_folder))
     plt.show()
 
+
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
@@ -92,8 +95,8 @@ class Dice(nn.Module):
 
         return dice
 
-class DiceThresholdTester:
 
+class DiceThresholdTester:
     def __init__(self, model: nn.Module, data_loader: torch.utils.data.DataLoader):
         self.model = model
         self.data_loader = data_loader

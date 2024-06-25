@@ -21,7 +21,6 @@ from datetime import datetime
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-
 class MyTrainer:
     def __init__(self, model, optimizer, loss_fn, lr_scheduler):
         self.validation_losses = []
