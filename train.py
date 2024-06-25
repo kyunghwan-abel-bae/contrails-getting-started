@@ -18,6 +18,8 @@ from util import *
 
 from datetime import datetime
 
+from torch.utils.data import Subset
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -126,6 +128,8 @@ if __name__ == '__main__':
     dataset_train = ContrailsAshDataset('train')
     dataset_validation = ContrailsAshDataset('validation')
 
+    dataset_train = Subset(dataset_train, range(500))
+
     #data_loader_train = DataLoader(dataset_train, batch_size=16, shuffle=True, num_workers=2)
     #data_loader_validation = DataLoader(dataset_validation, batch_size=16, shuffle=True, num_workers=2)
     data_loader_train = DataLoader(dataset_train, batch_size=16, shuffle=False, num_workers=2)
@@ -137,7 +141,7 @@ if __name__ == '__main__':
 
     print(data_loader_validation)
     print(dataset_validation.df_idx.head(10))
-    print(dataset_train.parrent_folder)
+    # print(dataset_train.parrent_folder)
 
 
     #2,5,6,7,10
@@ -156,7 +160,7 @@ if __name__ == '__main__':
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.70)
 
-        num_epochs = 11
+        num_epochs = 2
 
         trainer = MyTrainer(model, optimizer, criterion, lr_scheduler)
         trainer.fit(data_loader_train, data_loader_validation, epochs=num_epochs)
