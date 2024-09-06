@@ -13,13 +13,16 @@ class ContrailAshDataset(torch.utils.data.Dataset):
         self.str_data_type = str_folder
         self.df_idx = pd.DataFrame({'idx':os.listdir(os.path.join("data", str_folder))})
 
-    def __getitem__(self, index):
-        str_folder = self.df_idx.iloc[index].item()
+    def __len__(self):
+        return len(self.df_idx)
 
-        img = get_data(self.str_data_type, str_folder)
+    def __getitem__(self, index):
+        str_folder = str(self.df_idx.iloc[index]['idx'])
+
+        img = torch.tensor(get_data(self.str_data_type, str_folder))
         img = rearrange(img, 'c s h w -> (c s) h w') # s means sequence
 
-        mask = get_band_mask(self.str_data_type, str_folder)
+        mask = torch.tensor(get_band_mask(self.str_data_type, str_folder))
         mask = rearrange(mask, 'h w s -> s h w')
 
         return img, mask
@@ -27,5 +30,5 @@ class ContrailAshDataset(torch.utils.data.Dataset):
 
 # data_train = ContrailAshDataset("train")
 # img, mask = data_train[0]
-#
+
 # print(f"img&mask.shape : {img.shape}, {mask.shape}")
