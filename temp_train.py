@@ -1,3 +1,8 @@
+# GOAL
+
+# Among imgs, find contrails, and marking
+# how can i find contrails > data & data labels
+
 import time
 
 import torch
@@ -20,6 +25,8 @@ from datetime import datetime
 
 from torch.utils.data import Subset
 
+from einops import rearrange
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -29,38 +36,26 @@ class MyTrainer:
         self.batch_losses = []
         self.epoch_losses = []
         self.learning_rates = []
+
         self.model = model
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.lr_scheduler = lr_scheduler
         self._check_optim_net_aligned()
 
-    # Ensures that the given optimizer points to the given model
-    def _check_optim_net_aligned(self):
-        assert self.optimizer.param_groups[0]['params'] == list(self.model.parameters())
-
-    # Trains the model
-    def fit(self,
-            train_dataloader: DataLoader,
-            test_dataloader: DataLoader,
-            epochs: int = 10,
-            eval_every: int = 1,
-            ):
+    def fit(self, data_train: DataLoader, data_valid: DataLoader, epochs=11, eval_every: int = 1):
 
         for e in range(epochs):
             print("New learning rate: {}".format(self.lr_scheduler.get_last_lr()))
             self.learning_rates.append(self.lr_scheduler.get_last_lr()[0])
 
-            # Stores data about the batch
             batch_losses = []
             sub_batch_losses = []
 
-            for i, data in enumerate(train_dataloader):
-                self.model.train()
-
+            for i, data in enumerate(data_train):
                 if i % 100 == 0:
                     print(
-                        f'epotch: {e} batch: {i}/{len(train_dataloader)} loss: {torch.Tensor(sub_batch_losses).mean()}')
+                        f'epotch: {e} batch: {i}/{len(data_valid)} loss: {torch.Tensor(sub_batch_losses).mean()}')
                     sub_batch_losses.clear()
                 # Every data instance is an input + label pair
                 images, mask = data
@@ -69,38 +64,39 @@ class MyTrainer:
                     images = images.cuda()
                     mask = mask.cuda()
 
-                # Zero your gradients for every batch!
+                print("image =======")
+
                 self.optimizer.zero_grad()
-                # Make predictions for this batch
-                outputs = self.model(images)
-                # Compute the loss and its gradients
-                loss = self.loss_fn(outputs, mask)
-                loss.backward()
-                # Adjust learning weights
+
+                # check image here
+                pred = self.model(images)
+                print(pred.shape)
+
+                print("mask =======")
+                print(mask.shape)
+
+                loss = self.loss_fn(pred, mask)
+
+                self.loss_fn.backward()
                 self.optimizer.step()
 
-                # Saves data
                 self.batch_losses.append(loss.item())
                 batch_losses.append(loss)
                 sub_batch_losses.append(loss)
 
-            # Adjusts learning rate
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-            # Reports on the path
             mean_epoch_loss = torch.Tensor(batch_losses).mean()
             self.epoch_losses.append(mean_epoch_loss.item())
             print('Train Epoch: {} Average Loss: {:.6f}'.format(e, mean_epoch_loss))
 
-            # Reports on the training progress
             if (e + 1) % eval_every == 0:
-                torch.save(self.model.state_dict(), "model_checkpoint_e" + str(e) + ".pt")
+                # torch.save(self.model.state_dict(), "model_checkpoint")
                 with torch.no_grad():
                     self.model.eval()
                     losses = []
-                    for i, data in enumerate(test_dataloader):
-                        # Every data instance is an input + label pair
+                    for i, data in enumerate(data_valid):
                         images, mask = data
 
                         if torch.cuda.is_available():
@@ -113,46 +109,33 @@ class MyTrainer:
 
                     avg_loss = torch.Tensor(losses).mean().item()
                     self.validation_losses.append(avg_loss)
-                    print("Validation loss after", (e + 1), "epochs was", round(avg_loss, 4))
+                    print("Validation loss after", (e + 1), "epoch was", round(avg_loss, 4))
+
+
 
 
 if __name__ == '__main__':
+    print("main")
+
     print(f"cuda : {torch.cuda.is_available()}")
 
     time_start = datetime.now()
     print(f"start time : {time_start}")
 
-
     dice = Dice()
 
-    dataset_train = ContrailsAshDataset('train')
-    dataset_validation = ContrailsAshDataset('validation')
+    dataset_train = ContrailsAshDataset("train")
+    dataset_validation = ContrailsAshDataset("validation")
 
-    dataset_train = Subset(dataset_train, range(500))
+    dataset_train = Subset(dataset_train, range(3))
+    dataset_validation = Subset(dataset_validation, range(3))
 
-    #data_loader_train = DataLoader(dataset_train, batch_size=16, shuffle=True, num_workers=2)
-    #data_loader_validation = DataLoader(dataset_validation, batch_size=16, shuffle=True, num_workers=2)
-    data_loader_train = DataLoader(dataset_train, batch_size=16, shuffle=False, num_workers=2)
-    data_loader_validation = DataLoader(dataset_validation, batch_size=16, shuffle=False, num_workers=2)
-
-    #dir(data_loader_validation)
-
-    # temp_dataset = data_loader_validation.dataset
-    #
-    # print(data_loader_validation)
-    # print(dataset_validation.df_idx.head(10))
-    # print(dataset_train.parrent_folder)
-
-
-    #2,5,6,7,10
-
-    # ImageFolder로부터 폴더 이름 정보를 추출합니다.
-    # class_names = getattr(temp_dataset, 'classes', None)
-    # print(class_names)
+    loader_train = DataLoader(dataset_train, batch_size=16, shuffle=False, num_workers=2)
+    loader_validation = DataLoader(dataset_validation, batch_size=16, shuffle=False, num_workers=2)
 
     train = True
-
-    if train:
+    if train is True:
+        print("if model")
         model = UNet()
         model.to(device)
 
@@ -163,24 +146,13 @@ if __name__ == '__main__':
         num_epochs = 2
 
         trainer = MyTrainer(model, optimizer, criterion, lr_scheduler)
-        trainer.fit(data_loader_train, data_loader_validation, epochs=num_epochs)
-    else:
-        model = UNet()
-        model.load_state_dict(torch.load('model_checkpoint_e10.pt'))
-        model.eval()
-        model.to(device)
+        trainer.fit(loader_train, loader_validation, epochs=num_epochs)
+
+    # find optimal threshold with Validation data
+
+    # predict with validation data
 
 
-    if train:
-        df_data = pd.DataFrame({'Batch Losses': trainer.batch_losses})
 
-        sns.lineplot(data=df_data)
-        plt.xlabel('Batch')
-        plt.ylabel('Loss')
-        plt.title('Batch Loss')
-        plt.show()
 
-    time_end = datetime.now()
-    print(f"end time : {time_end}")
 
-    print(f"elapsed time : {time_end-time_start}")
