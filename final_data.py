@@ -25,7 +25,7 @@ class ContrailAshDataset(torch.utils.data.Dataset):
         mask = torch.tensor(get_band_mask(self.str_data_type, str_folder))
         mask = rearrange(mask, 'h w s -> s h w')
 
-        return img, mask
+        return img.float(), mask.float()
 
 
 # data_train = ContrailAshDataset("train")

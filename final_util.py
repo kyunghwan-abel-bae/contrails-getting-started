@@ -37,3 +37,29 @@ def get_data(str_data_type, str_folder):
     ch3 = process_data(band_14, _T11_BOUNDS)
 
     return np.stack([ch1, ch2, ch3])
+
+
+class Dice:
+    def __init__(self):
+        print("init")
+
+    def find_threshold(self, pred, mask):
+        thresholds = torch.arange(0.5, 1, 0.001)
+        max_count = -1
+        max_th = -1
+        for th in thresholds:
+            count = 0
+            for i in range(len(pred)):
+                item_pred = torch.zeros_like(pred[i])
+                item_mask = mask[i]
+
+                item_pred[pred[i] > th] = 1
+
+                intersection = (item_pred == item_mask).float().sum().item()#.float().mean().item()
+                count += intersection
+
+            if count > max_count:
+                max_count = count
+                max_th = th
+
+        return max_th
