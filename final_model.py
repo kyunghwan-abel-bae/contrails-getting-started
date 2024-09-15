@@ -81,7 +81,6 @@ class UNet(nn.Module):
         # self.up0 = Up(64, 16)
 
         self.dec = nn.Conv2d(64, 1, kernel_size=3, padding=1)
-        self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, input):

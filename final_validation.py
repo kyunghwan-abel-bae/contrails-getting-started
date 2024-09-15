@@ -64,8 +64,8 @@ with torch.no_grad():
     # print(f"value : {flatten_pred[0]}")
     # quit()
     # dice(flatten_pred, flatten_mask)
-    dice = Dice()
-    threshold = dice.find_threshold(flatten_pred, flatten_mask)
+    dice_finder = DiceFinder()
+    threshold = dice_finder.find_threshold(flatten_pred, flatten_mask)
     print(f"threshold : {threshold}")
 
 

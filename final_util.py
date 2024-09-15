@@ -39,27 +39,37 @@ def get_data(str_data_type, str_folder):
     return np.stack([ch1, ch2, ch3])
 
 
-class Dice:
+class Dice(nn.Module):
+    def __init__(self):
+        super(Dice, self).__init__()
+
+
+class DiceFinder:
     def __init__(self):
         print("init")
 
     def find_threshold(self, pred, mask):
         thresholds = torch.arange(0.5, 1, 0.001)
-        max_count = -1
+        max_dice_score = -1
         max_th = -1
+        smooth = 1
         for th in thresholds:
-            count = 0
+            dice_score = 0
             for i in range(len(pred)):
                 item_pred = torch.zeros_like(pred[i])
                 item_mask = mask[i]
 
                 item_pred[pred[i] > th] = 1
 
-                intersection = (item_pred == item_mask).float().sum().item()#.float().mean().item()
-                count += intersection
+                intersection = (item_pred * item_mask).sum()
+                # intersection = (item_pred == item_mask).float().sum().item()
 
-            if count > max_count:
-                max_count = count
+                dice = (2.0 * intersection + smooth) / (item_pred.sum() + item_mask.sum() + smooth)
+
+                dice_score += dice
+
+            if dice_score > max_dice_score:
+                max_dice_score = dice_score
                 max_th = th
 
         return max_th
