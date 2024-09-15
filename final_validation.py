@@ -5,6 +5,7 @@ from final_model import *
 from final_util import *
 
 from tqdm import tqdm  # tqdm 라이브러리 임포트
+import datetime
 
 
 
@@ -22,7 +23,7 @@ loader_test = torch.utils.data.DataLoader(data_test, batch_size=32, shuffle=Fals
 model = None
 
 # model = UNet().to(device)
-# model.load_state_dict(torch.load('model/unet.pt', map_location=device))
+# model.load_state_dict(torch.load('model/UNet_20240915233730.pt', map_location=device))
 
 # TRAIN
 if model is None:
@@ -42,6 +43,10 @@ if model is None:
             loss_value = loss(pred, mask)
             loss_value.backward()
             optimizer.step()
+
+    current_time = datetime.datetime.now().strftime("%Y%m%d%H%M%S")  # 현재 연월일시간 가져오기
+    model_name = f"UNet_{current_time}.pt"
+    torch.save(model.state_dict(), model_name)
 
 # find threshold
 with torch.no_grad():
