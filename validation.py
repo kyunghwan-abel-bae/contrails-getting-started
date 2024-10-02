@@ -30,8 +30,8 @@ if model is None:
     model = UNet().to(device)
     loss = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(100))
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
-    for e in range(1):
-        for img, mask in tqdm(loader_train, desc=f"Epoch {e + 1}/{100}", unit="batch"):
+    for e in range(10):
+        for img, mask in tqdm(loader_train, desc=f"Epoch {e + 1}/{10}", unit="batch"):
             if torch.cuda.is_available():
                 img = img.to(device)
                 mask = mask.to(device)
@@ -53,6 +53,10 @@ with torch.no_grad():
     flatten_pred = None
     flatten_mask = None
     for img, mask in loader_validation:
+        if torch.cuda.is_available():
+            img = img.to(device)
+            mask = mask.to(device)
+
         pred = torch.sigmoid(model(img))
 
         temp_pred = rearrange(pred, 'b s h w -> b (s h w)')
