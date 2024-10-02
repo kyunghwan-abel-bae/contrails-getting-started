@@ -163,7 +163,7 @@ if __name__ == '__main__':
     else:
         print("MODEL LOADING=========================")
         model = UNet()
-        model.load_state_dict(torch.load('model_checkpoint_e10.pt'))
+        model.load_state_dict(torch.load('sample.pt'))
         model.eval()
         model.to(device)
         print("MODEL LOADED=========================")
@@ -180,7 +180,7 @@ if __name__ == '__main__':
 
 
     optim_found = True
-    optim_threshold = 0.98
+    optim_threshold = 0.45
 
     if optim_found is not True:
         dice_threshold_tester = DiceThresholdTester(model, data_loader_validation)
