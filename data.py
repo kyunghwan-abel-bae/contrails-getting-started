@@ -1,19 +1,32 @@
+import os
+
+import numpy as np
 import torch
 import pandas as pd
 
 from util import *
 
-
-class ContrailsAshDataset(torch.utils.data.Dataset):
-    def __init__(self, parrent_folder: str):
-        self.df_idx: pd.DataFrame = pd.DataFrame({'idx': os.listdir(f'data/{parrent_folder}')})
-        self.parrent_folder: str = parrent_folder
+class ContrailAshDataset(torch.utils.data.Dataset):
+    def __init__(self, str_folder):
+        self.str_data_type = str_folder
+        self.df_idx = pd.DataFrame({'idx':os.listdir(os.path.join("data", str_folder))})
 
     def __len__(self):
         return len(self.df_idx)
 
-    def __getitem__(self, idx):
-        image_id: str = str(self.df_idx.iloc[idx]['idx'])
-        images = torch.tensor(np.reshape(get_ash_color_images(image_id, self.parrent_folder, get_mask_frame_only=False), (256, 256, 24))).to(torch.float32).permute(2, 0, 1)
-        mask = torch.tensor(get_mask_image(image_id, self.parrent_folder)).to(torch.float32).permute(2, 0, 1)
-        return images, mask
+    def __getitem__(self, index):
+        str_folder = str(self.df_idx.iloc[index]['idx'])
+
+        img = torch.tensor(get_data(self.str_data_type, str_folder))
+        img = rearrange(img, 'c s h w -> (c s) h w') # s means sequence
+
+        mask = torch.tensor(get_band_mask(self.str_data_type, str_folder))
+        mask = rearrange(mask, 'h w s -> s h w')
+
+        return img.float(), mask.float()
+
+
+# data_train = ContrailAshDataset("train")
+# img, mask = data_train[0]
+
+# print(f"img&mask.shape : {img.shape}, {mask.shape}")
